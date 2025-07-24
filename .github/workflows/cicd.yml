@@ -1,0 +1,62 @@
+name: CI/CD Multistage Pipeline - Azure
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build and Test
+        run: |
+          dotnet build --configuration Release
+          dotnet test --no-build --verbosity normal
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_PAT }}
+
+      - name: Build and Push Docker image
+        uses: docker/build-push-action@v4
+        with:
+          context: .
+          file: src/Fcg.WebApi/Dockerfile
+          push: true
+          tags: panoch/teste-dockerhub:latest
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: docker
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to Azure Web App using Publish Profile
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: fcg-webapi-app
+          publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_60BA9AB99CFA473B8C71FFE70577359A }}
+          images: panoch/teste-dockerhub:latest

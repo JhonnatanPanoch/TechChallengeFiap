@@ -107,10 +107,16 @@ git clone https://github.com/JhonnatanPanoch/TechChallengeFiap.git
 cd TechChallengeFiap
 ```
 
-2. Inicie os containers com Docker Compose:
+2. Para ambiente localhost: Inicie os containers com Docker Compose:
 
 ```bash
 docker-compose -f docker-compose-local.yml up --build
+```
+
+2.1 Para imagem dockerhub: Inicie os containers com Docker Compose
+
+```bash
+docker-compose -f docker-compose.hub.yml up
 ```
 
 3. Acesse a aplicação:
